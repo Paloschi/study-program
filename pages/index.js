@@ -9,4 +9,11 @@ function Home() {
   );
 }
 
+function teste() {
+  console.log("Teste function called");
+}
+
+function test2() {
+  console.log("Teste identação errada");
+}
 export default Home;
