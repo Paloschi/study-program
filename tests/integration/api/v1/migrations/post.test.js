@@ -17,10 +17,10 @@ test("POST to /api/v1/migrations should return 200", async () => {
   const numberOfMigrationsToApply = responseBody.length;
 
   const countAppliedMigrations = await database.query(
-    "select count(*) as n_migrations from pgmigrations;"
+    "select count(*) as n_migrations from pgmigrations;",
   );
   const numberOfAppliedMigrations = parseInt(
-    countAppliedMigrations.rows[0].n_migrations
+    countAppliedMigrations.rows[0].n_migrations,
   );
 
   expect(Array.isArray(responseBody)).toBe(true);
