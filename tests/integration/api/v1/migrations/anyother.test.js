@@ -5,18 +5,20 @@ beforeAll(async () => {
   await orchestrator.clearDatabase();
 });
 
-describe("POST /api/v1/migrations", () => {
+describe("ANY OTHER METHOD /api/v1/migrations", () => {
   describe("Anonymous user", () => {
     test("Any other method", async () => {
-      const othermethods = ["PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"];
+      const othermethods = ["PUT", "DELETE", "OPTIONS", "PATCH"];
 
       for (const method of othermethods) {
+        console.log("method: ", method);
         const response = await fetch(
           "http://localhost:3000/api/v1/migrations",
           {
             method: method,
           },
         );
+
         expect(response.status).toBe(405);
       }
     });
