@@ -19,7 +19,7 @@ exports.up = (pgm) => {
     },
     // Why 60 in length? https://www.npmjs.com/package/bcrypt#hash-info
     password: {
-      type: "varchar(72)",
+      type: "varchar(60)",
       notNull: true,
     },
     // Wht timestam with time zone (tz)? https://justatheory.com/2012/04/postgres-use-timestamptz/
