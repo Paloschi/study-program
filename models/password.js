@@ -16,6 +16,6 @@ async function compare(providedPassword, storedPasswordHash) {
 const password = {
   hash,
   compare,
-}
+};
 
 export default password;

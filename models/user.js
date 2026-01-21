@@ -99,16 +99,15 @@ async function update(username, userImputValues) {
           *
         ;`,
       values: [
-        userWithNewValues.id, 
-        userWithNewValues.username, 
-        userWithNewValues.email, 
+        userWithNewValues.id,
+        userWithNewValues.username,
+        userWithNewValues.email,
         userWithNewValues.password,
       ],
     });
     return results.rows[0];
   }
 }
-
 
 async function validateUniqueUsername(username) {
   const results = await database.query({
@@ -154,7 +153,6 @@ async function hashPasswordInObject(userImputValues) {
   const hashedPassword = await password.hash(userImputValues.password);
   userImputValues.password = hashedPassword;
 }
-
 
 const user = {
   create,
