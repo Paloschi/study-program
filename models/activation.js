@@ -1,6 +1,8 @@
 import email from "infra/email.js";
 import database from "infra/database.js";
 import webserver from "infra/webserver.js";
+import { NotFoundError } from "infra/errors.js";
+import user from "models/user.js";
 
 const EXPIRATION_IN_MILLISECONDS = 1000 * 60 * 15; // 15 minutes
 
@@ -25,24 +27,31 @@ async function create(userId) {
   }
 }
 
-async function findOneByUserId(userId) {
-  const activationFound = await runSelectQuery(userId);
+async function findOneByValidId(id) {
+  const activationFound = await runSelectQuery(id);
   return activationFound;
 
-  async function runSelectQuery(userId) {
+  async function runSelectQuery(id) {
     const results = await database.query({
       text: `
-          SELECT 
-            * 
-          FROM 
-            user_activate_tokens 
-          WHERE 
-            user_id = $1
-          LIMIT 
-            1
-        ;`,
-      values: [userId],
+        SELECT 
+          * 
+        FROM 
+          user_activate_tokens 
+        WHERE 
+          id = $1 
+          AND expires_at > NOW()
+          AND used_at IS NULL
+        LIMIT 
+          1`,
+      values: [id],
     });
+    if (results.rowCount === 0) {
+      throw new NotFoundError({
+        message: "The activation token was not found.",
+        action: "verify if the token is correct.",
+      });
+    }
     return results.rows[0];
   }
 }
@@ -60,10 +69,41 @@ Equipe TabGeo`,
   });
 }
 
+async function markTokenAsUsed(activationTokenId) {
+  const usedActivationToken = await runUpdateQuery(activationTokenId);
+  return usedActivationToken;
+
+  async function runUpdateQuery(activationTokenId) {
+    const results = await database.query({
+      text: `
+        UPDATE 
+          user_activate_tokens 
+        SET 
+          used_at = timezone('utc', now()),
+          updated_at = timezone('utc', now())
+        WHERE 
+          id = $1
+        RETURNING 
+          *
+        ;
+      `,
+      values: [activationTokenId],
+    });
+    return results.rows[0];
+  }
+}
+
+async function activateUserByUserId(userId) {
+  const activatedUser = await user.setFeatures(userId, ["create:session"]);
+  return activatedUser;
+}
+
 const activation = {
   create,
-  findOneByUserId,
+  findOneByValidId,
   sendEmailToUser,
-}
+  markTokenAsUsed,
+  activateUserByUserId,
+};
 
 export default activation;

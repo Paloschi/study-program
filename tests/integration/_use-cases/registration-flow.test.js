@@ -1,5 +1,7 @@
 import orchestrator from "tests/orchestrator.js";
 import activation from "models/activation.js";
+import webserver from "infra/webserver.js";
+import user from "models/user.js";
 
 beforeAll(async () => {
   await orchestrator.waitForAllServices();
@@ -10,6 +12,7 @@ beforeAll(async () => {
 
 describe("Use case: Registration Flow (all succcessful)", () => {
   let createUserResponseBody;
+  let activationTokenId;
 
   test("Create user account", async () => {
     const createUserResponse = await fetch(
@@ -20,11 +23,11 @@ describe("Use case: Registration Flow (all succcessful)", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: "rennanpaloschi",
+          username: "RegistrationFlow",
           email: "registration.flow@tabgeo.com.br",
           password: "senha123",
         }),
-      }
+      },
     );
 
     expect(createUserResponse.status).toBe(201);
@@ -33,7 +36,7 @@ describe("Use case: Registration Flow (all succcessful)", () => {
 
     expect(createUserResponseBody).toEqual({
       id: createUserResponseBody.id,
-      username: "rennanpaloschi",
+      username: "RegistrationFlow",
       email: "registration.flow@tabgeo.com.br",
       features: ["read:activation_token"],
       password: createUserResponseBody.password,
@@ -43,24 +46,44 @@ describe("Use case: Registration Flow (all succcessful)", () => {
   });
 
   test("Receive activation email", async () => {
-
     const lastEmail = await orchestrator.getLastEmail();
-
-    const activationToken = await activation.findOneByUserId(createUserResponseBody.id);
 
     expect(lastEmail.sender).toBe("<contato@tabgeo.com.br>");
     expect(lastEmail.recipients[0]).toBe("<registration.flow@tabgeo.com.br>");
     expect(lastEmail.subject).toBe("Ative seu cadastro no TabGeo");
-    expect(lastEmail.text).toContain("rennanpaloschi");
-    expect(lastEmail.text).toContain(activationToken.id);
+    expect(lastEmail.text).toContain("RegistrationFlow");
 
-    console.log(lastEmail.text);
+    activationTokenId = orchestrator.extractUUID(lastEmail.text);
+    const activationTokenObject =
+      await activation.findOneByValidId(activationTokenId);
+
+    expect(lastEmail.text).toContain(
+      `${webserver.origin}/cadastro/ativar/${activationTokenId}`,
+    );
+
+    expect(activationTokenObject.user_id).toBe(createUserResponseBody.id);
   });
 
   test("Activate account", async () => {
+    const activationResponse = await fetch(
+      `http://localhost:3000/api/v1/activations/${activationTokenId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    expect(activationResponse.status).toBe(200);
+
+    const activationResponseBody = await activationResponse.json();
+
+    expect(Date.parse(activationResponseBody.used_at)).not.toBeNaN();
+
+    const activatedUser = await user.findOneById(createUserResponseBody.id);
+    expect(activatedUser.features).toEqual(["create:session"]);
   });
 
-  test("Login to account", async () => {
-  });
-
+  test("Login to account", async () => {});
 });

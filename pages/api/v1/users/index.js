@@ -15,7 +15,6 @@ async function postHandler(request, response) {
 
   const newActivation = await activation.create(newUser.id);
   await activation.sendEmailToUser(newUser, newActivation);
-  // 3. Retornar o token de ativação
 
   return response.status(201).json(newUser);
 }
