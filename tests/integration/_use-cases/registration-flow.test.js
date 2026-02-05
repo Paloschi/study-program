@@ -85,5 +85,25 @@ describe("Use case: Registration Flow (all succcessful)", () => {
     expect(activatedUser.features).toEqual(["create:session"]);
   });
 
-  test("Login to account", async () => {});
+  test("Login to account", async () => {
+    const createSessionsResponse = await fetch(
+      "http://localhost:3000/api/v1/sessions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: createUserResponseBody.email,
+          password: "senha123",
+        }),
+      },
+    );
+
+    expect(createSessionsResponse.status).toBe(201);
+
+    const createSessionsResponseBody = await createSessionsResponse.json();
+
+    expect(createSessionsResponseBody.user_id).toBe(createUserResponseBody.id);
+  });
 });
